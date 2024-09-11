@@ -1,0 +1,30 @@
+{% load common_tags %}
+
+<div class="flex flex-col">
+  <div class="flex justify-between items-center">
+  <h2 class="text-xl font-bold">
+    Race Results
+    </h2>
+    <div class="flex text-gray-700 font-normal">
+      Elapsed {{duration}}
+    </div>
+    <a href={% url 'input' %}>
+      <button class="bg-blue-500 text-white rounded-md p-2 hover:bg-blue-600">
+        Play Again
+      </button>
+    </a>
+  </div>
+  {% if not error %}
+  <ol class="list-decimal list-inside">
+    {% for step in results %}
+    <li class="mb-2">
+      <span class="text-blue-500 hover:underline"><a href="{{ step|to_wiki_link }}" target='_blank'>{{ step|to_wiki_title }}</a></span>
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  <div class="mt-8 text-red-500">
+    {{ error }}
+  </div>
+  {% endif %}
+</div>

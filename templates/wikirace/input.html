@@ -1,0 +1,127 @@
+{% extends "base.html" %} {% load common_tags %} {% block body_content %}
+<div
+  class="max-w-7xl mx-auto my-5 flex flex-col gap-3 justify-center items-center"
+>
+  <h1 class="text-2xl font-bold">WikiRace Bot</h1>
+  <h2 class="text-lg font-normal">
+    Choose two Wikipedia pages to see the shortest path that the bot can find
+    between them.
+  </h2>
+  <div class="flex w-full gap-4">
+    <div class="flex-1">
+      <h3
+        class="max-w-3xl w-full min-w-[50%] font-normal p-3 text-gray-500 bg-blue-100 tranparent-[50%] rounded-md mb-3"
+      >
+        <span class="text-sm">
+          You can enter a subject title or paste in a link from a Wikipedia
+          page. For example
+          <strong>https://en.wikipedia.org/wiki/Battlestar_Galactica</strong> or
+          <strong>Battlestar Galactica</strong> are both acceptable entry
+          formats.
+        </span>
+      </h3>
+      <form
+        hx-post="{% url 'results' %}"
+        hx-target="#results"
+        hx-indicator="#loading"
+        class="flex flex-col gap-3 items-center w-full"
+      >
+        {% csrf_token %}
+        <input
+          id="startUrl"
+          class="p-2 border border-gray-300 rounded-md w-full disabled:text-gray-500"
+          type="url"
+          name="start_url"
+          placeholder="Start URL or Title"
+          value="{{ start_url|to_wiki_link }}"
+          required
+        />
+        <input
+          id="endUrl"
+          class="p-2 border border-gray-300 rounded-md w-full mt-3 disabled:text-gray-500"
+          type="url"
+          name="end_url"
+          placeholder="End URL or Title"
+          required
+          value="{{ end_url|to_wiki_link }}"
+        />
+        <button
+          id="submitButton"
+          class="p-2 bg-blue-500 text-white rounded-md w-full mt-3 hover:bg-green-700 disabled:bg-gray-500 disabled:cursor-not-allowed"
+          type="submit"
+        >
+          Let's Go!
+        </button>
+      </form>
+      <div
+        id="results"
+        class="max-w-3xl w-full min-w-[50%] p-5 rounded-md hidden gap-3 bg-gray-100 p-3 rounded-md mt-3"
+      ></div>
+    </div>
+    <div class="flex-1 bg-gray-100 p-4 rounded-md">
+      <h3 class="text-lg font-semibold mb-2">Recent Races</h3>
+      {% if recent_races %} {% for race in recent_races %}
+      <ul class="list-disc pl-5">
+        <li class="mb-2">
+          <span class="font-medium">{{ race.start_title }}</span> to
+          <span class="font-medium">{{ race.end_title }}</span>
+
+          <br />
+          <div class="flex flex-row justify-between items-center gap-x-8">
+            <span
+              class="text-sm text-gray-600"
+              title="Run on {{ race.start_at|date:'M j, Y g:i a' }} UTC"
+              >{{race.result|length}} steps in {{ race.get_elapsed_time_str}}
+            </span>
+
+            <span class="text-sm pr-12">
+              <a
+                href="{% url 'input' %}?start_url={{ race.start_title }}&end_url={{ race.end_title }}"
+                class="text-blue-500 hover:underline"
+                >Run Again</a
+              >
+            </span>
+          </div>
+        </li>
+      </ul>
+      {% endfor %} {% else %}
+      <div class="text-gray-500 italic">
+        There no previous races, be the first to run one!
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("htmx:beforeRequest", function (event) {
+    document.getElementById("submitButton").disabled = true;
+    document.getElementById("submitButton").textContent = "Processing...";
+    document.getElementById("startUrl").disabled = true;
+    document.getElementById("endUrl").disabled = true;
+  });
+
+  document.addEventListener("htmx:afterRequest", function (event) {
+    document.getElementById("submitButton").textContent = "Finished";
+    document.getElementById("results").classList.remove("hidden");
+  });
+
+  function prependWikipediaUrl(inputId) {
+    const input = document.getElementById(inputId);
+    input.addEventListener("change", function () {
+      let value = this.value.trim();
+      if (value) {
+        value = value.replace(/ /g, "_");
+        if (!value.startsWith("http://") && !value.startsWith("https://")) {
+          value = "https://en.wikipedia.org/wiki/" + encodeURIComponent(value);
+        }
+        this.value = value;
+      }
+    });
+  }
+
+  prependWikipediaUrl("startUrl");
+  prependWikipediaUrl("endUrl");
+</script>
+
+{% endblock %}
